@@ -1,0 +1,4 @@
+pydirectinput
+pyautogui
+keyboard
+pillow
