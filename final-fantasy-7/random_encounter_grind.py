@@ -1,46 +1,41 @@
 """
-This script is designed to automate random encounter grinding in Final Fantasy VII by monitoring a 
-specific pixel on the screen for changes that indicate an encounter has started. 
+This script is designed to automate random encounter grinding in Final Fantasy VII by monitoring a
+specific pixel on the screen for changes that indicate an encounter has started.
 When an encounter is detected, it will spam the 'Enter' key to quickly progress through battles.
 """
 
-import pydirectinput
-import pyautogui
+import threading
 import time
 import keyboard
-import threading
+import pyautogui
+import pydirectinput
 
 time.sleep(3)
 
 running = True
+mob_kills = 0
 
 # hotkey to stop the grind
 def stop_loop():
     global running
     running = False
     print("Stopped!")
+    print(f"Total mobs killed: {mob_kills}")
 
-keyboard.add_hotkey('ctrl+q', stop_loop)
 
-# mouse pixel config (wip)
-CHECK_X = 580
-CHECK_Y = 1431
-TARGET_COLOR = (0, 78, 178) # does not currently work as expected
-TOLERANCE = 30 
+keyboard.add_hotkey("ctrl+q", stop_loop)
+
+# mouse pixel config (change to align with needs)
+CHECK_X = 1315
+CHECK_Y = 1213
 
 """
-If the pixel color is predominantly blue (color of the ATB menu), we assume it's an encounter. 
+If the pixel color is predominantly blue (color of the ATB menu), we assume it's an encounter.
 """
 def is_encounter(pixel):
-    r, g, b = pixel
-    tr, tg, tb = TARGET_COLOR
+    _, _, b = pixel
+    return b >= 100
 
-    # simply checks for a high blue rgb value
-    return (
-        # abs(r - tr) <= TOLERANCE and
-        # abs(g - tg) <= TOLERANCE and
-        b >= 100
-    )
 
 """
 Helper to print the pixel under the mouse.
@@ -54,6 +49,7 @@ def mouse_pixel_monitor():
             print(f"Mouse @({x},{y}), Pixel RGB @{pixel}")
             last_pixel = pixel
         time.sleep(0.1)
+
 
 threading.Thread(target=mouse_pixel_monitor, daemon=True).start()
 last_pixel = None
@@ -69,21 +65,22 @@ while running:
         last_pixel = pixel
 
     if is_encounter(pixel):
-        print(f"Encounter engaged.")
+        print("Encounter engaged.")
 
         while running:
             pixel = pyautogui.pixel(CHECK_X, CHECK_Y)
             if not is_encounter(pixel):
                 break
 
-            pydirectinput.press('enter')
+            pydirectinput.press("enter")
             time.sleep(0.05)
 
+        mob_kills += 1
         print("Battle is complete.")
 
     else:
         # movement loop
-        for key in ['w', 'a', 's', 'd']:
+        for key in ["w", "a", "s", "d"]:
             if not running:
                 break
 
@@ -93,4 +90,4 @@ while running:
                 break
 
             pydirectinput.press(key)
-            time.sleep(0.15)
+            time.sleep(0.05)
