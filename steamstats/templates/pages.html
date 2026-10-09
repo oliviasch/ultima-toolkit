@@ -1,0 +1,71 @@
+{{# base }}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>$title</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <a class="logo" href="/">steam<span>stats</span></a>
+    <div class="hdr-btns">
+      <form action="/search" method="get">
+        <input type="text" name="id" value="$steamid"
+               placeholder="SteamID, custom URL, or profile link" autofocus>
+        <button type="submit">Search</button>
+      </form>
+      <form action="/search" method="get">
+        <input type="hidden" name="id" value="$steamid">
+        <input type="hidden" name="refresh" value="1">
+        <button type="submit">Refresh</button>
+      </form>
+    </div>
+  </header>
+  <main>$body</main>
+</body>
+</html>
+
+{{# home }}
+$error
+<div class="banner">
+  <div class="hero">
+    <h2>Steam achievements, PSNProfiles style</h2>
+    <p>Paste a SteamID64, a <code>steamcommunity.com/id/vanity</code> link, or a
+    custom URL above to see a profile page built from the Steam Web API.</p>
+    <p>Try <a href="/76561197960435530">76561197960435530</a>.</p>
+  </div>
+</div>
+$pins
+
+{{# profile }}
+$jump
+<div class="banner" id="summary">
+  <img class="avatar" src="$avatar" alt="">
+  <div class="level">
+    <div class="num">$level</div>
+    <div class="lbl">Level</div>
+  </div>
+  <div class="stats">
+    <div class="stat">
+      <b>$platinum</b><span>100% Games</span>
+    </div>
+    <div class="stat">
+      <b>$earned</b><span>Achievements</span>
+    </div>
+    <div class="stat">
+      <b>$game_count</b><span>Games</span>
+    </div>
+  </div>
+</div>
+<div class="bar" title="$points points"><i style="width:$progress%"></i></div>
+<div class="meta">$meta</div>
+$milestones
+<div class="bar-head"><h2 id="games">Games ($games_len)</h2></div>
+<div class="sorts">$tabs</div>
+$notice
+$games
+<h2 id="rarest">Rarest Achievements</h2>
+$rarest
+<div class="foot">silly test</div>

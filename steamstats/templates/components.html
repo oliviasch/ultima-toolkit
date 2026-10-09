@@ -1,0 +1,110 @@
+{{# error }}
+<div class="err">$message</div>
+
+{{# empty }}
+<div class="empty">None of the owned games have Steam achievements. They may be hidden titles, tools, or DLC.</div>
+
+{{# unlock_warn }}
+<span class="warn">unlock data unavailable</span>
+
+{{# pins }}
+<h2>Pinned</h2>
+<div class="pins">$cards</div>
+
+{{# pin }}
+<a class="pin" href="/$steamid">
+  $avatar
+  <span class="pin-text">
+    <span class="pin-name">$name</span>
+    <span class="pin-meta">Level $level &middot; $platinum 100%</span>
+  </span>
+</a>
+
+{{# jump }}
+<nav class="jump">$links</nav>
+
+{{# jump_link }}
+<a href="#$key">$label</a>
+
+{{# tab }}
+<a href="?sort=$sort"$active>$label</a>
+
+{{# plat_badge }}
+<div class="plat">100%</div>
+
+{{# pct_badge }}
+<div class="pct">$percent%</div>
+
+{{# milestones }}
+<h2 id="milestones">Milestones</h2>
+<div class="ms">$cards</div>
+
+{{# milestone }}
+<div class="ms-card">
+  $icon
+  <div class="ms-top">
+    <div class="ms-n">$num</div>
+    <div class="ms-lbl">$lbl</div>
+  </div>
+  <span class="ms-game">$game</span>
+  <div class="ms-when"><span>$when</span>$span</div>
+</div>
+
+{{# game }}
+<details class="game">
+  <summary>
+    $icon
+    <div class="title">
+      <b>$name</b><span>$hours$rarity</span>
+    </div>
+    <div class="count"><b>$earned</b> of $total</div>
+    $badge
+  </summary>
+  <div class="grid">$achievements</div>
+</details>
+
+{{# game_flat }}
+<div class="game flat">
+  $icon
+  <div class="title">
+    <b>$name</b><span>$hours</span>
+  </div>
+  <div class="count none">no achievements</div>
+  <div class="dash">&mdash;</div>
+</div>
+
+{{# achievement }}
+<div class="ach$state">
+  <img src="$icon" alt="" loading="lazy">
+  <div class="info">
+    <b>$name</b>
+    <p>$desc</p>
+    <div class="meta"><span class="rare">$detail</span> <span>$when</span></div>
+  </div>
+</div>
+
+{{# achievement_secret }}
+<details class="ach locked hidden">
+  <summary>
+    <img src="$icon" alt="" loading="lazy">
+    <div class="info">
+      <b>$name</b>
+      <p class="secret">$desc</p>
+      <p class="hint">Hidden achievement</p>
+      <div class="meta"><span class="rare">$detail</span> <span>$when</span></div>
+    </div>
+  </summary>
+</details>
+
+{{# rarest_row }}
+<div class="ach">
+  <img src="$icon" alt="" loading="lazy">
+  <div class="info">
+    <b>$name</b>
+    <p>$game</p>
+    <div class="meta"><span class="rare">$detail</span></div>
+  </div>
+</div>
+
+{{# rarest_empty }}
+<div class="empty">No achievements unlocked yet.</div>
