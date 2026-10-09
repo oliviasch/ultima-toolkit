@@ -1,1 +1,8 @@
-.venv
+# all dotfiles except gitignore
+.*
+!.gitignore
+
+__pycache__/
+
+# steam :D
+steam-stats/cache/
