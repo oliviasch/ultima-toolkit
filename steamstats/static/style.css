@@ -223,10 +223,10 @@ h2[id] {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
   flex: 1;
-  max-width: 420px;
+  max-width: 640px;
 }
 .stat b {
   display: block;
@@ -537,7 +537,7 @@ details.ach[open] > summary .secret {
   display: block;
   margin: 3px 0 0;
   font-size: 11px;
-  color: var(--text);
+  color: var(--dim);
 }
 details.ach[open] > summary .hint {
   display: none;

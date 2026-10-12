@@ -115,12 +115,11 @@ def _render_achievements(achievements, game):
         desc = a.get("description") or ""
         ctx = dict(icon=esc(icon), name=esc(a["name"]), detail=esc(detail),
                    when=esc(when))
-
         if a.get("hidden") and not a["unlocked"] and desc:
             cells.append(t("achievement_secret.html", desc=esc(desc), **ctx))
             continue
         if a.get("hidden") and not desc:
-            desc = "Hidden achievement"
+            desc = "Hidden achievement."
         cells.append(t("achievement.html", state="" if a["unlocked"] else " locked",
                        desc=esc(desc), **ctx))
     return "".join(cells)
@@ -170,6 +169,10 @@ def render_profile(p, order=DEFAULT_ORDER):
         milestones_html = t("milestones.html", cards="".join(cards))
 
     games = sort_games(p["games"], order)
+    pcts = [g["percent"] for g in p["games"]]
+    active_pcts = [x for x in pcts if x > 0]
+    avg_all = round(sum(pcts) / len(pcts), 1) if pcts else 0.0
+    avg_active = round(sum(active_pcts) / len(active_pcts), 1) if active_pcts else 0.0
     tabs = "".join(
         t("tab.html", sort=key, label=esc(label),
           active=' aria-current="true"' if key == order else "")
@@ -230,6 +233,8 @@ def render_profile(p, order=DEFAULT_ORDER):
              platinum=f"{p['platinum']:,}",
              earned=f"{p['earned']:,}",
              game_count=f"{p['game_count']:,}",
+             avg_all=avg_all,
+             avg_active=avg_active,
              points=f"{p['points']:,}",
              progress=p["progress"],
              meta=meta,
