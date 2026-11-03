@@ -27,7 +27,22 @@
 <a href="#$key">$label</a>
 
 {{# tab }}
-<a href="?sort=$sort"$active>$label</a>
+<a href="$href"$active>$label</a>
+
+{{# tag_filter }}
+<form class="tag-filter$active" action="/$steamid" method="get" role="search">
+  <input type="hidden" name="sort" value="$order">
+  <input class="tag-filter-input" type="text" name="tag" value="$tag"
+         list="tag-options" placeholder="filter by tag&hellip;" maxlength="40"
+         autocomplete="off" aria-label="Filter games by tag">
+  <button class="tag-filter-btn" type="submit">Filter</button>
+  <a class="tag-filter-clear" href="$clear_href"$clear_hidden
+     title="Clear tag filter" aria-label="Clear tag filter">&times;</a>
+  <datalist id="tag-options">$options</datalist>
+</form>
+
+{{# filter_empty }}
+<div class="empty">No games tagged &ldquo;$tag&rdquo;.</div>
 
 {{# plat_badge }}
 <div class="plat">100%</div>
@@ -57,20 +72,51 @@
     <div class="title">
       <b>$name</b><span>$hours$rarity</span>
     </div>
+    <div class="tags" data-tags-for="$appid"$tags_hidden>$tags</div>
     <div class="count"><b>$earned</b> of $total</div>
     $badge
   </summary>
+  $tag_editor
   <div class="grid">$achievements</div>
 </details>
 
 {{# game_flat }}
-<div class="game flat">
-  $icon
-  <div class="title">
-    <b>$name</b><span>$hours</span>
-  </div>
-  <div class="count none">no achievements</div>
-  <div class="dash">&mdash;</div>
+<details class="game">
+  <summary>
+    $icon
+    <div class="title">
+      <b>$name</b><span>$hours</span>
+    </div>
+    <div class="tags" data-tags-for="$appid"$tags_hidden>$tags</div>
+    <div class="count none">no achievements</div>
+    <div class="dash">&mdash;</div>
+  </summary>
+  $tag_editor
+</details>
+
+{{# tag_chip }}
+<span class="tag">$tag</span>
+
+{{# tag_option }}
+<option value="$tag"></option>
+
+{{# tag_more }}
+<span class="tag more">+$count</span>
+
+{{# tag_remove }}
+<button class="tag" type="button" data-remove="$tag" title="Remove $tag">$tag<span class="x">&times;</span></button>
+
+{{# tag_editor }}
+<div class="tag-panel" data-steamid="$steamid" data-appid="$appid" data-sort="$order">
+  <span class="tag-label">Tags</span>
+  <div class="tag-list" data-tags-for="$appid">$tags</div>
+  <form class="tag-add">
+    <input class="tag-input" type="text" list="tag-presets" maxlength="40"
+           aria-label="Add a tag" autocomplete="off"
+           title="Try backlog, playing, played, to complete, completed - or type your own"
+           placeholder="add tag&hellip;">
+    <button class="tag-add-btn" type="submit">Add</button>
+  </form>
 </div>
 
 {{# achievement }}

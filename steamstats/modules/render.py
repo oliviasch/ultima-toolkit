@@ -3,6 +3,7 @@ import os
 import re
 import string
 import time
+import urllib.parse
 
 from assets import asset_src
 
@@ -18,6 +19,9 @@ SECTIONS = (
 SORTS = (("pct", "Completion"),
     ("hours", "Most played"),)
 DEFAULT_ORDER = "hours"
+PRESET_TAGS = ("backlog", "playing", "played", "to complete", "completed")
+STATIC_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "static"))
 
 def _parse_sections(text):
     matches = list(_SECTION.finditer(text))
@@ -53,6 +57,16 @@ def sort_games(games, order):
     return sorted(games, key=lambda g: (-g["percent"], -g["playtime"]))
 
 
+def profile_query(order, tag=""):
+    """build a profile query string, leaving out values that are the default"""
+    params = []
+    if order and order != DEFAULT_ORDER:
+        params.append("sort=" + urllib.parse.quote(order, safe=""))
+    if tag:
+        params.append("tag=" + urllib.parse.quote(tag, safe=""))
+    return "?" + "&".join(params) if params else ""
+
+
 def esc(text):
     return html.escape(str(text or ""))
 
@@ -76,6 +90,61 @@ def icon_img(src, klass=""):
     return f'<img src="{esc(src)}"{k} alt="" loading="lazy">'
 
 
+def game_tags(tags, appid):
+    value = tags.get(str(appid)) if isinstance(tags, dict) else None
+    if not isinstance(value, list):
+        return []
+    return [tag for tag in value if isinstance(tag, str) and tag]
+
+
+def profile_tags(tags):
+    """every distinct tag on a profile, in case-insensitive order"""
+    found = {}
+    if isinstance(tags, dict):
+        for value in tags.values():
+            if not isinstance(value, list):
+                continue
+            for tag in value:
+                if isinstance(tag, str) and tag:
+                    found.setdefault(tag.casefold(), tag)
+    return sorted(found.values(), key=str.casefold)
+
+
+def filter_games(games, tags, query):
+    """keep games carrying a tag matching the query, case-insensitively"""
+    wanted = query.casefold()
+    return [g for g in games
+            if any(wanted in tag.casefold() for tag in game_tags(tags, g["appid"]))]
+
+
+def tag_chips(tags, limit=4):
+    """small read-only chips for a game row, collapsed when there are many"""
+    shown = tags[:limit]
+    more = len(tags) - len(shown)
+    chips = "".join(t("tag_chip.html", tag=esc(tag)) for tag in shown)
+    if more > 0:
+        chips += t("tag_more.html", count=more)
+    return chips
+
+
+def tag_list(tags):
+    """editable chips in the tag panel; each one removes its tag when clicked"""
+    return "".join(t("tag_remove.html", tag=esc(tag)) for tag in tags)
+
+
+def tag_editor(steamid, appid, tags, order):
+    return t("tag_editor.html", steamid=esc(steamid), appid=esc(appid),
+             order=esc(order), tags=tag_list(tags))
+
+
+def static_url(name):
+    try:
+        stamp = int(os.path.getmtime(os.path.join(STATIC_DIR, name)))
+    except OSError:
+        stamp = 0
+    return f"/{name}?v={stamp}"
+
+
 def jump_nav(steamid, order, anchors=True):
     if not anchors or not steamid:
         return ""
@@ -85,7 +154,10 @@ def jump_nav(steamid, order, anchors=True):
 
 
 def layout(title, body, steamid=""):
-    return t("base.html", title=esc(title), steamid=esc(steamid), body=body)
+    presets = "".join(t("tag_option.html", tag=esc(tag)) for tag in PRESET_TAGS)
+    return t("base.html", title=esc(title), steamid=esc(steamid), body=body,
+             presets=presets,
+             style_url=static_url("style.css"), script_url=static_url("app.js"))
 
 
 def render_home(error=None, pins=()):
@@ -125,8 +197,10 @@ def _render_achievements(achievements, game):
     return "".join(cells)
 
 
-def render_profile(p, order=DEFAULT_ORDER):
+def render_profile(p, order=DEFAULT_ORDER, tag=""):
     order = order if order in dict(SORTS) else DEFAULT_ORDER
+    tag = " ".join(str(tag or "").split())
+    tags = p.get("tags") if isinstance(p.get("tags"), dict) else {}
 
     since = (time.strftime("%B %Y", time.gmtime(p["created"]))
              if p["created"] else "unknown")
@@ -168,15 +242,27 @@ def render_profile(p, order=DEFAULT_ORDER):
                            span=span))
         milestones_html = t("milestones.html", cards="".join(cards))
 
-    games = sort_games(p["games"], order)
+    games = sort_games(filter_games(p["games"], tags, tag) if tag else p["games"],
+                       order)
     pcts = [g["percent"] for g in p["games"]]
     active_pcts = [x for x in pcts if x > 0]
     avg_all = round(sum(pcts) / len(pcts), 1) if pcts else 0.0
     avg_active = round(sum(active_pcts) / len(active_pcts), 1) if active_pcts else 0.0
     tabs = "".join(
-        t("tab.html", sort=key, label=esc(label),
+        t("tab.html", href=esc(f"/{p['steamid']}{profile_query(key, tag)}"),
+          label=esc(label),
           active=' aria-current="true"' if key == order else "")
         for key, label in SORTS)
+    tag_filter_html = t(
+        "tag_filter.html",
+        steamid=esc(p["steamid"]),
+        order=esc(order),
+        tag=esc(tag),
+        active=" active" if tag else "",
+        options="".join(t("tag_option.html", tag=esc(value))
+                        for value in profile_tags(tags)),
+        clear_href=esc(f"/{p['steamid']}{profile_query(order)}"),
+        clear_hidden="" if tag else " hidden")
 
     notice = ""
     if p["failed_count"]:
@@ -185,16 +271,25 @@ def render_profile(p, order=DEFAULT_ORDER):
             "could not be loaded - Steam is rate limiting us. Wait a minute and "
             "reload; the rest of the page is accurate for the games shown."))
     if not games:
-        notice += t("empty.html")
+        notice += (t("filter_empty.html", tag=esc(tag)) if tag
+                   else t("empty.html"))
 
     rows = []
     for g in games:
+        mine = game_tags(tags, g["appid"])
+        chips = tag_chips(mine)
+        hidden = "" if mine else " hidden"
+        editor = tag_editor(p["steamid"], g["appid"], mine, order)
         hours = f"{g['playtime'] // 60:,}h played"
         if not g["total"]:
             rows.append(t("game_flat.html",
                           icon=icon_img(asset_src(g.get("icon", ""), g["name"]), "icon"),
                           name=esc(g["name"]),
-                          hours=esc(hours)))
+                          hours=esc(hours),
+                          appid=g["appid"],
+                          tags=chips,
+                          tags_hidden=hidden,
+                          tag_editor=editor))
             continue
 
         badge = (t("plat_badge.html") if g["percent"] == 100
@@ -210,6 +305,10 @@ def render_profile(p, order=DEFAULT_ORDER):
                       name=esc(g["name"]),
                       hours=esc(hours),
                       rarity=rarity,
+                      appid=g["appid"],
+                      tags=chips,
+                      tags_hidden=hidden,
+                      tag_editor=editor,
                       earned=g["earned"],
                       total=g["total"],
                       badge=badge,
@@ -241,6 +340,7 @@ def render_profile(p, order=DEFAULT_ORDER):
              milestones=milestones_html,
              games_len=len(games),
              tabs=tabs,
+             filter=tag_filter_html,
              notice=notice,
              games="".join(rows),
              rarest=rarest_html)
