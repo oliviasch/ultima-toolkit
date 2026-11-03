@@ -5,7 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>$title</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="$style_url">
+  <script src="$script_url" defer></script>
 </head>
 <body>
   <header>
@@ -24,6 +25,7 @@
     </div>
   </header>
   <main>$body</main>
+  <datalist id="tag-presets">$presets</datalist>
 </body>
 </html>
 
@@ -69,7 +71,10 @@ $jump
 <div class="meta">$meta</div>
 $milestones
 <div class="bar-head"><h2 id="games">Games ($games_len)</h2></div>
-<div class="sorts">$tabs</div>
+<div class="games-tools">
+  <div class="sorts">$tabs</div>
+  $filter
+</div>
 $notice
 $games
 <h2 id="rarest">Rarest Achievements</h2>

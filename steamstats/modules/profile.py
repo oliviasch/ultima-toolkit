@@ -137,6 +137,18 @@ def build_profile(steamid, force=False):
             saved["from_cache"] = True
             return saved
 
+    # a refresh should not re-fetch completed games: their achievements can no
+    # longer change, so reuse whatever the previous cache already knew about them
+    previous = load_profile(steamid, max_age=None)
+    done_cache = {}
+    tags = {}
+    if previous:
+        done_cache = {g["appid"]: g for g in previous.get("games", [])
+                      if g.get("percent") == 100 and not g.get("error")}
+        # tags are ours, not steam's, so a refresh has to carry them forward
+        if isinstance(previous.get("tags"), dict):
+            tags = previous["tags"]
+
     players = api_get("ISteamUser", "GetPlayerSummaries", "v0002",
                       steamids=steamid).get("players", [])
     if not players:
@@ -162,8 +174,18 @@ def build_profile(steamid, force=False):
         )
 
     owned.sort(key=lambda g: g.get("playtime_forever", 0), reverse=True)
+
+    def build_or_reuse(game):
+        cached = done_cache.get(game["appid"])
+        if cached:
+            merged = dict(cached)
+            merged["playtime"] = game.get("playtime_forever", cached.get("playtime", 0))
+            merged["name"] = game.get("name", cached.get("name"))
+            return merged
+        return build_game(steamid, game)
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
-        built = list(pool.map(lambda g: build_game(steamid, g), owned))
+        built = list(pool.map(build_or_reuse, owned))
 
     # games that failed to load are kept as stubs, never silently dropped
     failed = [g for g in built if g and g.get("schema_failed")]
@@ -202,6 +224,7 @@ def build_profile(steamid, force=False):
         "failed_count": len(failed),
         "owned_count": len(owned),
         "games": games,
+        "tags": tags,
         "rarest": earned_achievements[:12],
         "milestones": build_milestones(completed),
         "cached_at": time.time(),

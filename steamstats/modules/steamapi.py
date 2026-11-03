@@ -24,7 +24,9 @@ _slots = threading.Semaphore(MAX_WORKERS)
 
 
 class SteamError(Exception):
-    pass
+    def __init__(self, message, code=None):
+        super().__init__(message)
+        self.code = code
 
 
 def unwrap(payload):
@@ -68,7 +70,7 @@ def api_get(interface, method, version, **params):
                     hint = " - rate limited by Steam; wait a minute and reload"
                 raise SteamError(
                     f"{interface}/{method} failed: HTTP {exc.code}"
-                    + (f" ({detail})" if detail else "") + hint) from exc
+                    + (f" ({detail})" if detail else "") + hint, code=exc.code) from exc
             except (urllib.error.URLError, TimeoutError) as exc:
                 if attempt < RETRIES:
                     time.sleep(BACKOFF[attempt])
@@ -111,7 +113,9 @@ def get_schema(appid):
     def load():
         try:
             response = api_get("ISteamUserStats", "GetSchemaForGame", "v0002", appid=appid)
-        except SteamError:
+        except SteamError as exc:
+            if exc.code == 403:
+                return []
             return None
         return response.get("game", {}).get("availableGameStats", {}).get("achievements", [])
 
